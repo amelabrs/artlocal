@@ -49,6 +49,10 @@
                 <p class="detail-desc" id="detail-desc"></p>
                 <p class="detail-artist" id="detail-artist"></p>
                 <p class="detail-distance" id="detail-distance"></p>
+                <div id="detail-actions" class="hidden">
+                    <button id="detail-delete-btn" onclick="deleteListing()" style="margin-top:16px;padding:10px 20px;background:#e94560;color:white;border:none;border-radius:8px;cursor:pointer;font-size:0.9rem;">🗑️ Delete Listing</button>
+                    <button id="detail-sold-btn" onclick="markSold()" style="margin-top:8px;padding:10px 20px;background:#444;color:white;border:none;border-radius:8px;cursor:pointer;font-size:0.9rem;">✅ Mark as Sold</button>
+                </div>
             </div>
         </div>
     </div>

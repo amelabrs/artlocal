@@ -112,10 +112,13 @@ function renderFeed(items) {
 
 // ── Detail View ─────────────────────────────────────────────────────
 
+let currentDetailId = null;
+
 async function showDetail(id) {
     try {
         const res = await fetch(`${API}/api/listings/${id}`);
         const item = await res.json();
+        currentDetailId = id;
 
         document.getElementById("detail-image").src = item.image_url;
         document.getElementById("detail-title").textContent = item.title;
@@ -128,9 +131,55 @@ async function showDetail(id) {
         document.getElementById("detail-distance").textContent =
             item.distance_miles != null ? `📍 ${item.distance_miles} miles away` : "";
 
+        // Show delete/sold buttons if this is the current user's listing
+        const actions = document.getElementById("detail-actions");
+        if (currentUser && currentUser.username === item.username) {
+            actions.classList.remove("hidden");
+        } else {
+            actions.classList.add("hidden");
+        }
+
         openModal("detail-modal");
     } catch (err) {
         console.error("Failed to load detail:", err);
+    }
+}
+
+async function deleteListing() {
+    if (!currentDetailId || !confirm("Delete this listing?")) return;
+    try {
+        const res = await fetch(`${API}/api/listings/${currentDetailId}`, {
+            method: "DELETE",
+            headers: { "Authorization": `Bearer ${token}` },
+        });
+        if (res.ok) {
+            closeModal("detail-modal");
+            loadListings();
+        } else {
+            const data = await res.json();
+            alert(data.detail || "Failed to delete");
+        }
+    } catch (err) {
+        alert("Network error");
+    }
+}
+
+async function markSold() {
+    if (!currentDetailId) return;
+    try {
+        const res = await fetch(`${API}/api/listings/${currentDetailId}/sold`, {
+            method: "PUT",
+            headers: { "Authorization": `Bearer ${token}` },
+        });
+        if (res.ok) {
+            closeModal("detail-modal");
+            loadListings();
+        } else {
+            const data = await res.json();
+            alert(data.detail || "Failed to mark as sold");
+        }
+    } catch (err) {
+        alert("Network error");
     }
 }
 
@@ -278,8 +327,55 @@ function handleNav(view) {
         openModal("post-modal");
     } else if (view === "feed") {
         loadListings();
+    } else if (view === "profile") {
+        if (!token || !currentUser) {
+            alert("Please sign in first");
+            openModal("auth-modal");
+            return;
+        }
+        showProfile(currentUser.username);
+    } else if (view === "search") {
+        document.getElementById("search-input").focus();
     }
-    // search & profile to be expanded later
+}
+
+// ── Profile View ────────────────────────────────────────────────────
+
+async function showProfile(username) {
+    try {
+        const res = await fetch(`${API}/api/profile/${username}`);
+        const profile = await res.json();
+
+        const grid = document.getElementById("masonry-grid");
+        const empty = document.getElementById("empty-state");
+        const count = document.getElementById("listing-count");
+        const status = document.getElementById("location-status");
+
+        status.textContent = `👤 ${profile.display_name} — ${profile.bio || ""}`;
+        empty.classList.add("hidden");
+
+        const items = profile.listings || [];
+        count.textContent = `${items.length} listing${items.length !== 1 ? "s" : ""}`;
+
+        if (items.length === 0) {
+            grid.innerHTML = "";
+            empty.classList.remove("hidden");
+            return;
+        }
+
+        grid.innerHTML = items.map(item => `
+            <div class="card" onclick="showDetail(${item.id})">
+                <img src="${escapeHtml(item.image_url)}" alt="${escapeHtml(item.title)}" loading="lazy">
+                ${item.is_sold ? '<span class="card-badge">SOLD</span>' : ''}
+                <div class="card-info">
+                    <div class="card-title">${escapeHtml(item.title)}</div>
+                    <div class="card-price">₹${Number(item.price).toLocaleString('en-IN')}</div>
+                </div>
+            </div>
+        `).join("");
+    } catch (err) {
+        console.error("Failed to load profile:", err);
+    }
 }
 
 // ── Search ──────────────────────────────────────────────────────────
