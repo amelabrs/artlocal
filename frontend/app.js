@@ -10,6 +10,7 @@ let listings = [];
 // ── Init ────────────────────────────────────────────────────────────
 
 document.addEventListener("DOMContentLoaded", () => {
+    document.getElementById("build-id").textContent = "build " + new Date().toISOString().slice(0,16).replace("T"," ");
     updateAuthUI();
     setupEventListeners();
     loadListings();  // Load feed immediately, don't wait for location
