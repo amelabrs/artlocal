@@ -11,8 +11,9 @@ let listings = [];
 
 document.addEventListener("DOMContentLoaded", () => {
     updateAuthUI();
-    requestLocation();
     setupEventListeners();
+    loadListings();  // Load feed immediately, don't wait for location
+    requestLocation();  // Try to get location in background
 });
 
 function setupEventListeners() {
@@ -44,8 +45,7 @@ function setupEventListeners() {
 function requestLocation() {
     const status = document.getElementById("location-status");
     if (!navigator.geolocation) {
-        status.textContent = "📍 Geolocation not supported";
-        loadListings();
+        status.textContent = "📍 Showing all art";
         return;
     }
     status.textContent = "📍 Getting your location...";
@@ -54,15 +54,12 @@ function requestLocation() {
             userLat = pos.coords.latitude;
             userLng = pos.coords.longitude;
             status.textContent = `📍 Showing art near you`;
-            loadListings();
+            loadListings();  // Reload with distance sorting
         },
         (err) => {
-            status.textContent = "📍 Location unavailable — showing all";
-            userLat = 0;
-            userLng = 0;
-            loadListings();
+            status.textContent = "📍 Showing all art";
         },
-        { enableHighAccuracy: true, timeout: 10000 }
+        { enableHighAccuracy: false, timeout: 5000 }
     );
 }
 
@@ -102,7 +99,7 @@ function renderFeed(items) {
     grid.innerHTML = items.map(item => `
         <div class="card" onclick="showDetail(${item.id})">
             <img src="${escapeHtml(item.image_url)}" alt="${escapeHtml(item.title)}" loading="lazy">
-            <span class="card-badge">${item.distance_miles} mi</span>
+            ${item.distance_miles != null ? `<span class="card-badge">${item.distance_miles} mi</span>` : ''}
             <div class="card-info">
                 <div class="card-title">${escapeHtml(item.title)}</div>
                 <div class="card-price">$${Number(item.price).toFixed(0)}</div>
@@ -223,22 +220,9 @@ async function handlePost(e) {
         openModal("auth-modal");
         return;
     }
-    if (!userLat || !userLng) {
-        // Try to get location one more time
-        const gotLocation = await new Promise((resolve) => {
-            if (!navigator.geolocation) { resolve(false); return; }
-            navigator.geolocation.getCurrentPosition(
-                (pos) => { userLat = pos.coords.latitude; userLng = pos.coords.longitude; resolve(true); },
-                () => resolve(false),
-                { enableHighAccuracy: true, timeout: 5000 }
-            );
-        });
-        if (!gotLocation) {
-            // Use a default location so posting still works
-            userLat = 37.7749;
-            userLng = -122.4194;
-        }
-    }
+    // Use current location or default
+    const postLat = userLat || 37.7749;
+    const postLng = userLng || -122.4194;
 
     const form = new FormData();
     form.append("title", document.getElementById("post-title").value);
@@ -246,8 +230,8 @@ async function handlePost(e) {
     form.append("medium", document.getElementById("post-medium").value);
     form.append("dimensions", document.getElementById("post-dimensions").value);
     form.append("description", document.getElementById("post-description").value);
-    form.append("lat", userLat);
-    form.append("lng", userLng);
+    form.append("lat", postLat);
+    form.append("lng", postLng);
     form.append("image", document.getElementById("post-image").files[0]);
 
     const submitBtn = document.getElementById("post-submit");

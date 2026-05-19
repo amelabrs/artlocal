@@ -209,22 +209,24 @@ def get_listings(lat: float = 0, lng: float = 0, radius: float = 25, limit: int 
            WHERE l.is_sold = 0
            ORDER BY l.created_at DESC
            LIMIT ?""",
-        (limit * 3,)  # Fetch extra, filter by distance in Python
+        (limit,)
     ).fetchall()
     conn.close()
 
-    # Calculate distances and filter
     results = []
     for row in rows:
-        dist = haversine_miles(lat, lng, row["lat"], row["lng"])
-        if dist <= radius:
-            item = dict(row)
+        item = dict(row)
+        if lat != 0 or lng != 0:
+            dist = haversine_miles(lat, lng, row["lat"], row["lng"])
             item["distance_miles"] = round(dist, 1)
-            results.append(item)
+        else:
+            item["distance_miles"] = None
+        results.append(item)
 
-    # Sort by distance
-    results.sort(key=lambda x: x["distance_miles"])
-    return results[:limit]
+    # Sort by distance if location available
+    if lat != 0 or lng != 0:
+        results.sort(key=lambda x: x["distance_miles"])
+    return results
 
 
 @app.get("/api/listings/{listing_id}")
