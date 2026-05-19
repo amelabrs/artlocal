@@ -102,7 +102,7 @@ function renderFeed(items) {
             ${item.distance_miles != null ? `<span class="card-badge">${item.distance_miles} mi</span>` : ''}
             <div class="card-info">
                 <div class="card-title">${escapeHtml(item.title)}</div>
-                <div class="card-price">$${Number(item.price).toFixed(0)}</div>
+                <div class="card-price">₹${Number(item.price).toLocaleString('en-IN')}</div>
                 <div class="card-artist">by ${escapeHtml(item.display_name || item.username)}</div>
             </div>
         </div>
@@ -118,7 +118,7 @@ async function showDetail(id) {
 
         document.getElementById("detail-image").src = item.image_url;
         document.getElementById("detail-title").textContent = item.title;
-        document.getElementById("detail-price").textContent = `$${Number(item.price).toFixed(2)}`;
+        document.getElementById("detail-price").textContent = `\u20b9${Number(item.price).toLocaleString('en-IN')}`;
         document.getElementById("detail-meta").textContent =
             [item.medium, item.dimensions].filter(Boolean).join(" · ");
         document.getElementById("detail-desc").textContent = item.description || "";

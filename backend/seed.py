@@ -35,18 +35,18 @@ ARTISTS = [
 BASE_LAT, BASE_LNG = 37.7749, -122.4194
 
 LISTINGS = [
-    {"title": "Golden Hour on the Bay", "price": 450, "medium": "Oil", "dimensions": "24x36 in", "description": "Sunset over the San Francisco Bay, painted en plein air.", "lat_offset": 0.01, "lng_offset": -0.005},
-    {"title": "Urban Bloom", "price": 120, "medium": "Acrylic", "dimensions": "16x20 in", "description": "Abstract florals inspired by city gardens.", "lat_offset": -0.008, "lng_offset": 0.003},
-    {"title": "Digital Dreams #7", "price": 80, "medium": "Digital", "dimensions": "4000x3000 px", "description": "Generative art piece, printed on archival paper.", "lat_offset": 0.015, "lng_offset": 0.01},
-    {"title": "Driftwood Sculpture", "price": 650, "medium": "Sculpture", "dimensions": "18x12x8 in", "description": "Found driftwood assembled into an abstract form.", "lat_offset": -0.02, "lng_offset": -0.01},
-    {"title": "Morning Fog", "price": 280, "medium": "Watercolor", "dimensions": "11x14 in", "description": "Soft watercolor of fog rolling through the hills.", "lat_offset": 0.005, "lng_offset": 0.008},
-    {"title": "Neon Nights", "price": 175, "medium": "Digital", "dimensions": "3000x4000 px", "description": "Cyberpunk-inspired cityscape.", "lat_offset": -0.012, "lng_offset": 0.015},
-    {"title": "Ceramic Bowl — Ocean Glaze", "price": 95, "medium": "Other", "dimensions": "8x8x4 in", "description": "Handthrown stoneware with custom blue glaze.", "lat_offset": 0.025, "lng_offset": -0.008},
-    {"title": "Abstract in Red", "price": 320, "medium": "Acrylic", "dimensions": "30x40 in", "description": "Bold gestural painting on stretched canvas.", "lat_offset": -0.003, "lng_offset": -0.02},
-    {"title": "Portrait Commission Sample", "price": 500, "medium": "Oil", "dimensions": "16x20 in", "description": "Oil portrait — commissions open!", "lat_offset": 0.018, "lng_offset": 0.005},
-    {"title": "Collage: City Layers", "price": 150, "medium": "Mixed Media", "dimensions": "12x16 in", "description": "Newspaper and acrylic on wood panel.", "lat_offset": -0.015, "lng_offset": 0.012},
-    {"title": "Sunset Print (Limited Ed.)", "price": 45, "medium": "Print", "dimensions": "8x10 in", "description": "Giclée print, edition of 50. Signed & numbered.", "lat_offset": 0.008, "lng_offset": -0.015},
-    {"title": "Wire & Stone Pendant", "price": 65, "medium": "Other", "dimensions": "2x1 in", "description": "Wearable art — sterling silver wire with beach stone.", "lat_offset": -0.005, "lng_offset": 0.002},
+    {"title": "Golden Hour on the Bay", "price": 37500, "medium": "Oil", "dimensions": "24x36 in", "description": "Sunset over the San Francisco Bay, painted en plein air.", "lat_offset": 0.01, "lng_offset": -0.005},
+    {"title": "Urban Bloom", "price": 9999, "medium": "Acrylic", "dimensions": "16x20 in", "description": "Abstract florals inspired by city gardens.", "lat_offset": -0.008, "lng_offset": 0.003},
+    {"title": "Digital Dreams #7", "price": 6500, "medium": "Digital", "dimensions": "4000x3000 px", "description": "Generative art piece, printed on archival paper.", "lat_offset": 0.015, "lng_offset": 0.01},
+    {"title": "Driftwood Sculpture", "price": 54000, "medium": "Sculpture", "dimensions": "18x12x8 in", "description": "Found driftwood assembled into an abstract form.", "lat_offset": -0.02, "lng_offset": -0.01},
+    {"title": "Morning Fog", "price": 23000, "medium": "Watercolor", "dimensions": "11x14 in", "description": "Soft watercolor of fog rolling through the hills.", "lat_offset": 0.005, "lng_offset": 0.008},
+    {"title": "Neon Nights", "price": 14500, "medium": "Digital", "dimensions": "3000x4000 px", "description": "Cyberpunk-inspired cityscape.", "lat_offset": -0.012, "lng_offset": 0.015},
+    {"title": "Ceramic Bowl — Ocean Glaze", "price": 7800, "medium": "Other", "dimensions": "8x8x4 in", "description": "Handthrown stoneware with custom blue glaze.", "lat_offset": 0.025, "lng_offset": -0.008},
+    {"title": "Abstract in Red", "price": 26500, "medium": "Acrylic", "dimensions": "30x40 in", "description": "Bold gestural painting on stretched canvas.", "lat_offset": -0.003, "lng_offset": -0.02},
+    {"title": "Portrait Commission Sample", "price": 42000, "medium": "Oil", "dimensions": "16x20 in", "description": "Oil portrait — commissions open!", "lat_offset": 0.018, "lng_offset": 0.005},
+    {"title": "Collage: City Layers", "price": 12500, "medium": "Mixed Media", "dimensions": "12x16 in", "description": "Newspaper and acrylic on wood panel.", "lat_offset": -0.015, "lng_offset": 0.012},
+    {"title": "Sunset Print (Limited Ed.)", "price": 3750, "medium": "Print", "dimensions": "8x10 in", "description": "Giclée print, edition of 50. Signed & numbered.", "lat_offset": 0.008, "lng_offset": -0.015},
+    {"title": "Wire & Stone Pendant", "price": 5400, "medium": "Other", "dimensions": "2x1 in", "description": "Wearable art — sterling silver wire with beach stone.", "lat_offset": -0.005, "lng_offset": 0.002},
 ]
 
 
@@ -57,9 +57,10 @@ def seed():
     # Check if already seeded
     existing = conn.execute("SELECT COUNT(*) as c FROM users").fetchone()["c"]
     if existing > 0:
-        print(f"Database already has {existing} users. Skipping seed.")
-        conn.close()
-        return
+        # Re-seed: drop old data
+        conn.execute("DELETE FROM listings")
+        conn.execute("DELETE FROM users")
+        conn.commit()
 
     # Create demo artists
     artist_ids = []
