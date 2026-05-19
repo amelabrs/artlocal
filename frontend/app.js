@@ -224,8 +224,20 @@ async function handlePost(e) {
         return;
     }
     if (!userLat || !userLng) {
-        alert("Location required to post. Please enable location access.");
-        return;
+        // Try to get location one more time
+        const gotLocation = await new Promise((resolve) => {
+            if (!navigator.geolocation) { resolve(false); return; }
+            navigator.geolocation.getCurrentPosition(
+                (pos) => { userLat = pos.coords.latitude; userLng = pos.coords.longitude; resolve(true); },
+                () => resolve(false),
+                { enableHighAccuracy: true, timeout: 5000 }
+            );
+        });
+        if (!gotLocation) {
+            // Use a default location so posting still works
+            userLat = 37.7749;
+            userLng = -122.4194;
+        }
     }
 
     const form = new FormData();
