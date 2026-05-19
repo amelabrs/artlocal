@@ -404,6 +404,13 @@ function closeModal(id) {
     document.getElementById(id).classList.add("hidden");
 }
 
+// Close modals by clicking the dark backdrop
+document.addEventListener("click", (e) => {
+    if (e.target.classList.contains("modal")) {
+        e.target.classList.add("hidden");
+    }
+});
+
 // ── Utilities ───────────────────────────────────────────────────────
 
 function escapeHtml(str) {
