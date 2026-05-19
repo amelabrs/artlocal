@@ -7,46 +7,50 @@ sys.path.insert(0, os.path.dirname(__file__))
 from models import get_db, init_db
 from auth import hash_password
 
-# Sample art images from Unsplash (free, no API key needed for hotlinking demos)
+# Sample art images from Unsplash (Indian art, crochet, handmade)
 DEMO_IMAGES = [
-    "https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?w=600",
-    "https://images.unsplash.com/photo-1547826039-bfc35e0f1ea8?w=600",
-    "https://images.unsplash.com/photo-1578301978693-85fa9c0320b9?w=600",
-    "https://images.unsplash.com/photo-1549289524-06cf8837ace5?w=600",
-    "https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=600",
-    "https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=600",
-    "https://images.unsplash.com/photo-1460661419201-fd4cecdf8a8b?w=600",
-    "https://images.unsplash.com/photo-1605721911519-3dfeb3be25e7?w=600",
-    "https://images.unsplash.com/photo-1582201942988-13e60e4556ee?w=600",
-    "https://images.unsplash.com/photo-1574182245530-967d9b3831af?w=600",
-    "https://images.unsplash.com/photo-1501472312651-726afe119dad?w=600",
-    "https://images.unsplash.com/photo-1518998053901-5348d3961a04?w=600",
+    "https://images.unsplash.com/photo-1605721911519-3dfeb3be25e7?w=600",  # mandala
+    "https://images.unsplash.com/photo-1582738411706-bfc8e691d1c2?w=600",  # indian art
+    "https://images.unsplash.com/photo-1567361808960-dec9cb578182?w=600",  # crochet
+    "https://images.unsplash.com/photo-1596727147705-61a532a659bd?w=600",  # madhubani style
+    "https://images.unsplash.com/photo-1578301978693-85fa9c0320b9?w=600",  # colorful abstract
+    "https://images.unsplash.com/photo-1615729947596-a598e5de0ab3?w=600",  # yarn/crochet
+    "https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?w=600",  # painting
+    "https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=600",  # watercolor
+    "https://images.unsplash.com/photo-1582201942988-13e60e4556ee?w=600",  # ceramic
+    "https://images.unsplash.com/photo-1574182245530-967d9b3831af?w=600",  # textile
+    "https://images.unsplash.com/photo-1549289524-06cf8837ace5?w=600",  # abstract
+    "https://images.unsplash.com/photo-1547826039-bfc35e0f1ea8?w=600",  # handmade
+    "https://images.unsplash.com/photo-1601121141461-9d6647bca1ed?w=600",  # rangoli
+    "https://images.unsplash.com/photo-1518998053901-5348d3961a04?w=600",  # colorful
 ]
 
-# Demo artists (lat/lng near San Francisco for testing)
+# Demo artists
 ARTISTS = [
-    {"email": "luna@demo.com", "username": "luna_creates", "display_name": "Luna Martinez", "bio": "Oil painter inspired by the Bay Area coastline"},
-    {"email": "kai@demo.com", "username": "kai.art", "display_name": "Kai Chen", "bio": "Digital artist & illustrator"},
-    {"email": "river@demo.com", "username": "riverstone_art", "display_name": "River Stone", "bio": "Mixed media sculptor working with found objects"},
+    {"email": "priya@demo.com", "username": "priya_arts", "display_name": "Priya Sharma", "bio": "Madhubani & mandala artist from Jaipur. Traditional meets modern."},
+    {"email": "ananya@demo.com", "username": "ananya.crochet", "display_name": "Ananya Nair", "bio": "Crochet artist & fiber art lover. Custom orders welcome 🧶"},
+    {"email": "vikram@demo.com", "username": "vikram.studio", "display_name": "Vikram Patel", "bio": "Contemporary Indian art — oils, acrylics & mixed media"},
+    {"email": "meera@demo.com", "username": "meera_creates", "display_name": "Meera Iyer", "bio": "Warli art, Kalamkari prints & handmade pottery"},
 ]
 
-# Demo listings (spread around a central point)
-# Using SF area coordinates with slight variations
-BASE_LAT, BASE_LNG = 37.7749, -122.4194
+# Demo listings — Indian coordinates (Mumbai area)
+BASE_LAT, BASE_LNG = 19.0760, 72.8777
 
 LISTINGS = [
-    {"title": "Golden Hour on the Bay", "price": 37500, "medium": "Oil", "dimensions": "24x36 in", "description": "Sunset over the San Francisco Bay, painted en plein air.", "lat_offset": 0.01, "lng_offset": -0.005},
-    {"title": "Urban Bloom", "price": 9999, "medium": "Acrylic", "dimensions": "16x20 in", "description": "Abstract florals inspired by city gardens.", "lat_offset": -0.008, "lng_offset": 0.003},
-    {"title": "Digital Dreams #7", "price": 6500, "medium": "Digital", "dimensions": "4000x3000 px", "description": "Generative art piece, printed on archival paper.", "lat_offset": 0.015, "lng_offset": 0.01},
-    {"title": "Driftwood Sculpture", "price": 54000, "medium": "Sculpture", "dimensions": "18x12x8 in", "description": "Found driftwood assembled into an abstract form.", "lat_offset": -0.02, "lng_offset": -0.01},
-    {"title": "Morning Fog", "price": 23000, "medium": "Watercolor", "dimensions": "11x14 in", "description": "Soft watercolor of fog rolling through the hills.", "lat_offset": 0.005, "lng_offset": 0.008},
-    {"title": "Neon Nights", "price": 14500, "medium": "Digital", "dimensions": "3000x4000 px", "description": "Cyberpunk-inspired cityscape.", "lat_offset": -0.012, "lng_offset": 0.015},
-    {"title": "Ceramic Bowl — Ocean Glaze", "price": 7800, "medium": "Other", "dimensions": "8x8x4 in", "description": "Handthrown stoneware with custom blue glaze.", "lat_offset": 0.025, "lng_offset": -0.008},
-    {"title": "Abstract in Red", "price": 26500, "medium": "Acrylic", "dimensions": "30x40 in", "description": "Bold gestural painting on stretched canvas.", "lat_offset": -0.003, "lng_offset": -0.02},
-    {"title": "Portrait Commission Sample", "price": 42000, "medium": "Oil", "dimensions": "16x20 in", "description": "Oil portrait — commissions open!", "lat_offset": 0.018, "lng_offset": 0.005},
-    {"title": "Collage: City Layers", "price": 12500, "medium": "Mixed Media", "dimensions": "12x16 in", "description": "Newspaper and acrylic on wood panel.", "lat_offset": -0.015, "lng_offset": 0.012},
-    {"title": "Sunset Print (Limited Ed.)", "price": 3750, "medium": "Print", "dimensions": "8x10 in", "description": "Giclée print, edition of 50. Signed & numbered.", "lat_offset": 0.008, "lng_offset": -0.015},
-    {"title": "Wire & Stone Pendant", "price": 5400, "medium": "Other", "dimensions": "2x1 in", "description": "Wearable art — sterling silver wire with beach stone.", "lat_offset": -0.005, "lng_offset": 0.002},
+    {"title": "Madhubani Peacock", "price": 8500, "medium": "Acrylic", "dimensions": "18x24 in", "description": "Traditional Madhubani peacock motif on handmade paper. Vibrant natural dyes.", "lat_offset": 0.01, "lng_offset": -0.005},
+    {"title": "Crochet Mandala Wall Hanging", "price": 3200, "medium": "Other", "dimensions": "24 in diameter", "description": "Handmade crochet mandala in sunset colours. Cotton yarn, wooden hoop.", "lat_offset": -0.008, "lng_offset": 0.003},
+    {"title": "Mumbai Monsoon", "price": 15000, "medium": "Oil", "dimensions": "24x36 in", "description": "Oil painting capturing the magic of Mumbai rains. Marine Drive at dusk.", "lat_offset": 0.015, "lng_offset": 0.01},
+    {"title": "Crochet Amigurumi Set — Indian Animals", "price": 2800, "medium": "Other", "dimensions": "6 in each", "description": "Set of 3: elephant, peacock, and tiger. Handmade with love 🧶", "lat_offset": -0.02, "lng_offset": -0.01},
+    {"title": "Warli Tribal Art — Harvest Dance", "price": 6500, "medium": "Acrylic", "dimensions": "16x20 in", "description": "Contemporary Warli painting on canvas. White on terracotta background.", "lat_offset": 0.005, "lng_offset": 0.008},
+    {"title": "Crochet Market Bag — Boho", "price": 1500, "medium": "Other", "dimensions": "14x16 in", "description": "Reusable crochet tote in earthy tones. Sturdy cotton cord.", "lat_offset": -0.012, "lng_offset": 0.015},
+    {"title": "Terracotta Diya Set (6)", "price": 1200, "medium": "Other", "dimensions": "3 in each", "description": "Hand-painted terracotta diyas. Perfect for Diwali or home decor.", "lat_offset": 0.025, "lng_offset": -0.008},
+    {"title": "Ganesha in Gold Leaf", "price": 28000, "medium": "Mixed Media", "dimensions": "20x24 in", "description": "Contemporary Ganesha with gold leaf accents on textured canvas.", "lat_offset": -0.003, "lng_offset": -0.02},
+    {"title": "Crochet Baby Blanket — Rainbow", "price": 4500, "medium": "Other", "dimensions": "36x42 in", "description": "Soft granny-square blanket in pastel rainbow. Hypoallergenic acrylic yarn.", "lat_offset": 0.018, "lng_offset": 0.005},
+    {"title": "Kalamkari Tree of Life", "price": 12000, "medium": "Other", "dimensions": "24x36 in", "description": "Hand-painted Kalamkari on cotton fabric. Natural vegetable dyes.", "lat_offset": -0.015, "lng_offset": 0.012},
+    {"title": "Rajasthani Miniature — Radha Krishna", "price": 18500, "medium": "Watercolor", "dimensions": "8x10 in", "description": "Detailed miniature painting on silk. 22k gold detailing.", "lat_offset": 0.008, "lng_offset": -0.015},
+    {"title": "Crochet Coasters Set (6) — Chai Time", "price": 850, "medium": "Other", "dimensions": "4 in each", "description": "Colourful crochet coasters shaped like teacups. Great housewarming gift!", "lat_offset": -0.005, "lng_offset": 0.002},
+    {"title": "Pichwai Lotus Pond", "price": 35000, "medium": "Oil", "dimensions": "30x40 in", "description": "Traditional Pichwai style lotus pond. Rich colours on cotton cloth.", "lat_offset": 0.009, "lng_offset": -0.007},
+    {"title": "Crochet Jhumka Earrings", "price": 650, "medium": "Other", "dimensions": "2.5 in drop", "description": "Handmade crochet jhumkas with beads. Lightweight & colourful!", "lat_offset": -0.011, "lng_offset": 0.009},
 ]
 
 

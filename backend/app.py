@@ -170,18 +170,32 @@ async def create_listing(
     image: UploadFile = File(...),
     user=Depends(get_current_user),
 ):
-    # Upload image to Cloudinary
+    import uuid
     contents = await image.read()
     if len(contents) > 10 * 1024 * 1024:  # 10MB limit
         raise HTTPException(status_code=400, detail="Image too large (max 10MB)")
 
-    upload_result = cloudinary.uploader.upload(
-        contents,
-        folder="artlocal",
-        transformation=[{"width": 1200, "crop": "limit"}],
-    )
-    image_url = upload_result["secure_url"]
-    public_id = upload_result["public_id"]
+    # Save locally if Cloudinary not configured, otherwise use Cloudinary
+    cloud_name = os.environ.get("CLOUDINARY_CLOUD_NAME", "")
+    if cloud_name:
+        upload_result = cloudinary.uploader.upload(
+            contents,
+            folder="artlocal",
+            transformation=[{"width": 1200, "crop": "limit"}],
+        )
+        image_url = upload_result["secure_url"]
+        public_id = upload_result["public_id"]
+    else:
+        # Local file storage
+        uploads_dir = Path(__file__).parent.parent / "data" / "uploads"
+        uploads_dir.mkdir(parents=True, exist_ok=True)
+        ext = image.filename.rsplit(".", 1)[-1] if "." in image.filename else "jpg"
+        filename = f"{uuid.uuid4().hex}.{ext}"
+        filepath = uploads_dir / filename
+        with open(filepath, "wb") as f:
+            f.write(contents)
+        image_url = f"/uploads/{filename}"
+        public_id = None
 
     conn = get_db()
     cursor = conn.execute(
@@ -284,6 +298,18 @@ def delete_listing(listing_id: int, user=Depends(get_current_user)):
 
 
 # ── Serve Frontend ──────────────────────────────────────────────────────
+
+UPLOADS_DIR = Path(__file__).parent.parent / "data" / "uploads"
+UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
+
+
+@app.get("/uploads/{filename}")
+def serve_upload(filename: str):
+    filepath = UPLOADS_DIR / filename
+    if not filepath.exists():
+        raise HTTPException(status_code=404)
+    return FileResponse(str(filepath))
+
 
 @app.get("/")
 def serve_index():
