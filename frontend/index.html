@@ -49,9 +49,14 @@
                 <p class="detail-desc" id="detail-desc"></p>
                 <p class="detail-artist" id="detail-artist"></p>
                 <p class="detail-distance" id="detail-distance"></p>
-                <div id="detail-actions" class="hidden">
-                    <button id="detail-delete-btn" onclick="deleteListing()" style="margin-top:16px;padding:10px 20px;background:#e94560;color:white;border:none;border-radius:8px;cursor:pointer;font-size:0.9rem;">🗑️ Delete Listing</button>
-                    <button id="detail-sold-btn" onclick="markSold()" style="margin-top:8px;padding:10px 20px;background:#444;color:white;border:none;border-radius:8px;cursor:pointer;font-size:0.9rem;">✅ Mark as Sold</button>
+                <div class="detail-buttons" style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap;">
+                    <button id="detail-fave-btn" onclick="toggleFavorite()" style="padding:10px 16px;background:#333;color:white;border:none;border-radius:8px;cursor:pointer;font-size:0.9rem;">❤️ Save</button>
+                    <button id="detail-msg-btn" onclick="openMessageFromDetail()" style="padding:10px 16px;background:#333;color:white;border:none;border-radius:8px;cursor:pointer;font-size:0.9rem;">💬 Message Artist</button>
+                    <button id="detail-follow-btn" onclick="toggleFollowFromDetail()" style="padding:10px 16px;background:#333;color:white;border:none;border-radius:8px;cursor:pointer;font-size:0.9rem;">➕ Follow</button>
+                </div>
+                <div id="detail-actions" class="hidden" style="margin-top:12px;">
+                    <button id="detail-delete-btn" onclick="deleteListing()" style="padding:10px 20px;background:#e94560;color:white;border:none;border-radius:8px;cursor:pointer;font-size:0.9rem;">🗑️ Delete Listing</button>
+                    <button id="detail-sold-btn" onclick="markSold()" style="margin-left:8px;padding:10px 20px;background:#444;color:white;border:none;border-radius:8px;cursor:pointer;font-size:0.9rem;">✅ Mark as Sold</button>
                 </div>
             </div>
         </div>
@@ -116,11 +121,48 @@
         </div>
     </div>
 
+    <!-- ── Filter Bar ───────────────────────────────────────── -->
+    <div id="filter-bar" class="filter-bar">
+        <select id="filter-medium">
+            <option value="">All Mediums</option>
+            <option value="Oil">Oil</option>
+            <option value="Acrylic">Acrylic</option>
+            <option value="Watercolor">Watercolor</option>
+            <option value="Crochet">Crochet</option>
+            <option value="Digital">Digital</option>
+            <option value="Sculpture">Sculpture</option>
+            <option value="Mixed Media">Mixed Media</option>
+            <option value="Pottery">Pottery</option>
+            <option value="Other">Other</option>
+        </select>
+        <input type="number" id="filter-min-price" placeholder="Min ₹" min="0">
+        <input type="number" id="filter-max-price" placeholder="Max ₹" min="0">
+        <button id="filter-apply" onclick="applyFilters()">Filter</button>
+        <button id="filter-clear" onclick="clearFilters()">✕</button>
+    </div>
+
+    <!-- ── Message Modal ────────────────────────────────────── -->
+    <div id="message-modal" class="modal hidden">
+        <div class="modal-content" style="max-width:500px;">
+            <button class="modal-close" onclick="closeModal('message-modal')">&times;</button>
+            <h2 id="msg-modal-title">💬 Messages</h2>
+            <div id="msg-conversations" class="msg-list"></div>
+            <div id="msg-chat" class="hidden">
+                <div id="msg-chat-messages" class="msg-chat-area"></div>
+                <form id="msg-send-form" onsubmit="sendMessage(event)" style="display:flex;gap:8px;margin-top:12px;">
+                    <input type="text" id="msg-input" placeholder="Type a message..." style="flex:1;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);background:#0f0f1a;color:#eee;">
+                    <button type="submit" style="padding:10px 16px;background:#e94560;color:white;border:none;border-radius:8px;cursor:pointer;">Send</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <!-- ── Bottom Nav ───────────────────────────────────────── -->
     <nav id="bottom-nav">
         <button class="nav-btn active" data-view="feed">🏠<span>Home</span></button>
         <button class="nav-btn" data-view="search">🔍<span>Search</span></button>
         <button class="nav-btn post-btn" data-view="post">➕<span>Post</span></button>
+        <button class="nav-btn" data-view="messages">💬<span>Messages</span></button>
         <button class="nav-btn" data-view="profile">👤<span>Profile</span></button>
     </nav>
 

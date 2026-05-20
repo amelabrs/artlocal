@@ -1,4 +1,4 @@
-/* ── ArtLocal — App Logic ─────────────────────────────────────────── */
+/* ── ArtLocal — App Logic (Stage 2) ──────────────────────────────── */
 
 const API = "";  // Same origin
 let token = localStorage.getItem("artlocal_token");
@@ -6,6 +6,8 @@ let currentUser = JSON.parse(localStorage.getItem("artlocal_user") || "null");
 let userLat = null;
 let userLng = null;
 let listings = [];
+let currentDetailItem = null;  // full detail object for follow/msg/fave
+let currentChatUser = null;    // username of active chat partner
 
 // ── Init ────────────────────────────────────────────────────────────
 
@@ -13,31 +15,22 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("build-id").textContent = "build " + new Date().toISOString().slice(0,16).replace("T"," ");
     updateAuthUI();
     setupEventListeners();
-    loadListings();  // Load feed immediately, don't wait for location
-    requestLocation();  // Try to get location in background
+    loadListings();
+    requestLocation();
 });
 
 function setupEventListeners() {
-    // Nav buttons
     document.querySelectorAll(".nav-btn").forEach(btn => {
         btn.addEventListener("click", () => handleNav(btn.dataset.view));
     });
-
-    // Auth
     document.getElementById("auth-btn").addEventListener("click", () => {
         if (token) { logout(); } else { openModal("auth-modal"); }
     });
     document.getElementById("auth-form").addEventListener("submit", handleAuth);
     document.getElementById("auth-toggle-link").addEventListener("click", toggleAuthMode);
-
-    // Post form
     document.getElementById("post-form").addEventListener("submit", handlePost);
     document.getElementById("post-image").addEventListener("change", handleImagePreview);
-
-    // Location button
     document.getElementById("location-btn").addEventListener("click", requestLocation);
-
-    // Search
     document.getElementById("search-input").addEventListener("input", debounce(handleSearch, 300));
 }
 
@@ -45,28 +38,23 @@ function setupEventListeners() {
 
 function requestLocation() {
     const status = document.getElementById("location-status");
-    if (!navigator.geolocation) {
-        status.textContent = "📍 Showing all art";
-        return;
-    }
+    if (!navigator.geolocation) { status.textContent = "📍 Showing all art"; return; }
     status.textContent = "📍 Getting your location...";
     navigator.geolocation.getCurrentPosition(
         (pos) => {
             userLat = pos.coords.latitude;
             userLng = pos.coords.longitude;
-            status.textContent = `📍 Showing art near you`;
-            loadListings();  // Reload with distance sorting
+            status.textContent = "📍 Showing art near you";
+            loadListings();
         },
-        (err) => {
-            status.textContent = "📍 Showing all art";
-        },
+        () => { status.textContent = "📍 Showing all art"; },
         { enableHighAccuracy: false, timeout: 5000 }
     );
 }
 
 // ── Load & Render Feed ──────────────────────────────────────────────
 
-async function loadListings() {
+async function loadListings(filterParams) {
     try {
         const params = new URLSearchParams({
             lat: userLat || 0,
@@ -74,6 +62,11 @@ async function loadListings() {
             radius: 50,
             limit: 50,
         });
+        if (filterParams) {
+            for (const [k, v] of Object.entries(filterParams)) {
+                if (v) params.set(k, v);
+            }
+        }
         const res = await fetch(`${API}/api/listings?${params}`);
         listings = await res.json();
         renderFeed(listings);
@@ -93,7 +86,6 @@ function renderFeed(items) {
         count.textContent = "";
         return;
     }
-
     empty.classList.add("hidden");
     count.textContent = `${items.length} artwork${items.length > 1 ? "s" : ""}`;
 
@@ -112,17 +104,15 @@ function renderFeed(items) {
 
 // ── Detail View ─────────────────────────────────────────────────────
 
-let currentDetailId = null;
-
 async function showDetail(id) {
     try {
         const res = await fetch(`${API}/api/listings/${id}`);
         const item = await res.json();
-        currentDetailId = id;
+        currentDetailItem = item;
 
         document.getElementById("detail-image").src = item.image_url;
         document.getElementById("detail-title").textContent = item.title;
-        document.getElementById("detail-price").textContent = `\u20b9${Number(item.price).toLocaleString('en-IN')}`;
+        document.getElementById("detail-price").textContent = `₹${Number(item.price).toLocaleString('en-IN')}`;
         document.getElementById("detail-meta").textContent =
             [item.medium, item.dimensions].filter(Boolean).join(" · ");
         document.getElementById("detail-desc").textContent = item.description || "";
@@ -131,12 +121,25 @@ async function showDetail(id) {
         document.getElementById("detail-distance").textContent =
             item.distance_miles != null ? `📍 ${item.distance_miles} miles away` : "";
 
-        // Show delete/sold buttons if this is the current user's listing
+        // Owner actions
         const actions = document.getElementById("detail-actions");
-        if (currentUser && currentUser.username === item.username) {
-            actions.classList.remove("hidden");
+        const isOwner = currentUser && currentUser.username === item.username;
+        actions.classList.toggle("hidden", !isOwner);
+
+        // Show/hide social buttons for non-owners
+        const faveBtn = document.getElementById("detail-fave-btn");
+        const msgBtn = document.getElementById("detail-msg-btn");
+        const followBtn = document.getElementById("detail-follow-btn");
+        if (isOwner) {
+            faveBtn.style.display = "none";
+            msgBtn.style.display = "none";
+            followBtn.style.display = "none";
         } else {
-            actions.classList.add("hidden");
+            faveBtn.style.display = "";
+            msgBtn.style.display = "";
+            followBtn.style.display = "";
+            faveBtn.textContent = "❤️ Save";
+            followBtn.textContent = "➕ Follow";
         }
 
         openModal("detail-modal");
@@ -146,41 +149,171 @@ async function showDetail(id) {
 }
 
 async function deleteListing() {
-    if (!currentDetailId || !confirm("Delete this listing?")) return;
+    if (!currentDetailItem || !confirm("Delete this listing?")) return;
     try {
-        const res = await fetch(`${API}/api/listings/${currentDetailId}`, {
+        const res = await fetch(`${API}/api/listings/${currentDetailItem.id}`, {
             method: "DELETE",
             headers: { "Authorization": `Bearer ${token}` },
         });
-        if (res.ok) {
-            closeModal("detail-modal");
-            loadListings();
-        } else {
-            const data = await res.json();
-            alert(data.detail || "Failed to delete");
-        }
-    } catch (err) {
-        alert("Network error");
-    }
+        if (res.ok) { closeModal("detail-modal"); loadListings(); }
+        else { const d = await res.json(); alert(d.detail || "Failed to delete"); }
+    } catch (err) { alert("Network error"); }
 }
 
 async function markSold() {
-    if (!currentDetailId) return;
+    if (!currentDetailItem) return;
     try {
-        const res = await fetch(`${API}/api/listings/${currentDetailId}/sold`, {
+        const res = await fetch(`${API}/api/listings/${currentDetailItem.id}/sold`, {
             method: "PUT",
             headers: { "Authorization": `Bearer ${token}` },
         });
+        if (res.ok) { closeModal("detail-modal"); loadListings(); }
+        else { const d = await res.json(); alert(d.detail || "Failed to mark as sold"); }
+    } catch (err) { alert("Network error"); }
+}
+
+// ── Favorites ───────────────────────────────────────────────────────
+
+async function toggleFavorite() {
+    if (!token) { alert("Please sign in first"); openModal("auth-modal"); return; }
+    if (!currentDetailItem) return;
+    const btn = document.getElementById("detail-fave-btn");
+    const isSaved = btn.textContent.includes("Saved");
+    try {
+        const res = await fetch(`${API}/api/favorites/${currentDetailItem.id}`, {
+            method: isSaved ? "DELETE" : "POST",
+            headers: { "Authorization": `Bearer ${token}` },
+        });
         if (res.ok) {
-            closeModal("detail-modal");
-            loadListings();
-        } else {
-            const data = await res.json();
-            alert(data.detail || "Failed to mark as sold");
+            btn.textContent = isSaved ? "❤️ Save" : "💖 Saved";
         }
-    } catch (err) {
-        alert("Network error");
-    }
+    } catch (err) { console.error(err); }
+}
+
+// ── Follow ──────────────────────────────────────────────────────────
+
+async function toggleFollowFromDetail() {
+    if (!token) { alert("Please sign in first"); openModal("auth-modal"); return; }
+    if (!currentDetailItem) return;
+    const btn = document.getElementById("detail-follow-btn");
+    const isFollowing = btn.textContent.includes("Following");
+    const artistUsername = currentDetailItem.username;
+    try {
+        const res = await fetch(`${API}/api/follow/${artistUsername}`, {
+            method: isFollowing ? "DELETE" : "POST",
+            headers: { "Authorization": `Bearer ${token}` },
+        });
+        if (res.ok) {
+            btn.textContent = isFollowing ? "➕ Follow" : "✓ Following";
+        }
+    } catch (err) { console.error(err); }
+}
+
+// ── Messaging ───────────────────────────────────────────────────────
+
+function openMessageFromDetail() {
+    if (!token) { alert("Please sign in first"); openModal("auth-modal"); return; }
+    if (!currentDetailItem) return;
+    closeModal("detail-modal");
+    openChat(currentDetailItem.username, currentDetailItem.display_name || currentDetailItem.username);
+}
+
+async function loadConversations() {
+    if (!token) return;
+    try {
+        const res = await fetch(`${API}/api/messages`, {
+            headers: { "Authorization": `Bearer ${token}` },
+        });
+        const convos = await res.json();
+        const list = document.getElementById("msg-conversations");
+        const chat = document.getElementById("msg-chat");
+        chat.classList.add("hidden");
+        list.classList.remove("hidden");
+        document.getElementById("msg-modal-title").textContent = "💬 Messages";
+
+        if (convos.length === 0) {
+            list.innerHTML = '<p style="text-align:center;opacity:0.6;padding:24px;">No conversations yet</p>';
+            return;
+        }
+        list.innerHTML = convos.map(c => `
+            <div class="msg-convo-item" onclick="openChat('${escapeHtml(c.username)}', '${escapeHtml(c.display_name || c.username)}')">
+                <div class="msg-convo-name">${escapeHtml(c.display_name || c.username)}${c.unread > 0 ? ` <span class="msg-badge">${c.unread}</span>` : ''}</div>
+                <div class="msg-convo-preview">${escapeHtml(c.last_message).slice(0, 50)}</div>
+            </div>
+        `).join("");
+    } catch (err) { console.error(err); }
+}
+
+async function openChat(username, displayName) {
+    currentChatUser = username;
+    document.getElementById("msg-conversations").classList.add("hidden");
+    document.getElementById("msg-chat").classList.remove("hidden");
+    document.getElementById("msg-modal-title").textContent = `💬 ${displayName || username}`;
+    openModal("message-modal");
+    await refreshChat();
+}
+
+async function refreshChat() {
+    if (!currentChatUser || !token) return;
+    try {
+        const res = await fetch(`${API}/api/messages/${currentChatUser}`, {
+            headers: { "Authorization": `Bearer ${token}` },
+        });
+        const msgs = await res.json();
+        const area = document.getElementById("msg-chat-messages");
+        if (msgs.length === 0) {
+            area.innerHTML = '<p style="text-align:center;opacity:0.5;padding:24px;">Start the conversation!</p>';
+            return;
+        }
+        area.innerHTML = msgs.map(m => `
+            <div class="msg-bubble ${m.sender_username === currentUser.username ? 'msg-mine' : 'msg-theirs'}">
+                <span>${escapeHtml(m.body)}</span>
+                <small>${new Date(m.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</small>
+            </div>
+        `).join("");
+        area.scrollTop = area.scrollHeight;
+    } catch (err) { console.error(err); }
+}
+
+async function sendMessage(e) {
+    e.preventDefault();
+    const input = document.getElementById("msg-input");
+    const body = input.value.trim();
+    if (!body || !currentChatUser) return;
+    try {
+        const res = await fetch(`${API}/api/messages`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+                receiver_username: currentChatUser,
+                body: body,
+                listing_id: currentDetailItem ? currentDetailItem.id : null,
+            }),
+        });
+        if (res.ok) {
+            input.value = "";
+            await refreshChat();
+        }
+    } catch (err) { console.error(err); }
+}
+
+// ── Filters ─────────────────────────────────────────────────────────
+
+function applyFilters() {
+    const medium = document.getElementById("filter-medium").value;
+    const minPrice = document.getElementById("filter-min-price").value;
+    const maxPrice = document.getElementById("filter-max-price").value;
+    loadListings({ medium, min_price: minPrice, max_price: maxPrice });
+}
+
+function clearFilters() {
+    document.getElementById("filter-medium").value = "";
+    document.getElementById("filter-min-price").value = "";
+    document.getElementById("filter-max-price").value = "";
+    loadListings();
 }
 
 // ── Auth ────────────────────────────────────────────────────────────
@@ -203,16 +336,13 @@ async function handleAuth(e) {
     e.preventDefault();
     const email = document.getElementById("auth-email").value;
     const password = document.getElementById("auth-password").value;
-
     const endpoint = isSignup ? "/api/signup" : "/api/login";
     const body = { email, password };
-
     if (isSignup) {
         body.username = document.getElementById("auth-username").value;
         body.display_name = document.getElementById("auth-displayname").value;
         body.is_artist = document.getElementById("auth-is-artist").checked;
     }
-
     try {
         const res = await fetch(`${API}${endpoint}`, {
             method: "POST",
@@ -220,19 +350,14 @@ async function handleAuth(e) {
             body: JSON.stringify(body),
         });
         const data = await res.json();
-        if (!res.ok) {
-            alert(data.detail || "Error");
-            return;
-        }
+        if (!res.ok) { alert(data.detail || "Error"); return; }
         token = data.token;
         currentUser = { id: data.user_id, username: data.username };
         localStorage.setItem("artlocal_token", token);
         localStorage.setItem("artlocal_user", JSON.stringify(currentUser));
         updateAuthUI();
         closeModal("auth-modal");
-    } catch (err) {
-        alert("Network error");
-    }
+    } catch (err) { alert("Network error"); }
 }
 
 function logout() {
@@ -245,11 +370,7 @@ function logout() {
 
 function updateAuthUI() {
     const btn = document.getElementById("auth-btn");
-    if (token && currentUser) {
-        btn.textContent = `Sign Out`;
-    } else {
-        btn.textContent = "Sign In";
-    }
+    btn.textContent = (token && currentUser) ? "Sign Out" : "Sign In";
 }
 
 // ── Post Listing ────────────────────────────────────────────────────
@@ -265,14 +386,9 @@ function handleImagePreview(e) {
 
 async function handlePost(e) {
     e.preventDefault();
-    if (!token) {
-        alert("Please sign in first");
-        openModal("auth-modal");
-        return;
-    }
-    // Use current location or default
-    const postLat = userLat || 37.7749;
-    const postLng = userLng || -122.4194;
+    if (!token) { alert("Please sign in first"); openModal("auth-modal"); return; }
+    const postLat = userLat || 19.076;
+    const postLng = userLng || 72.8777;
 
     const form = new FormData();
     form.append("title", document.getElementById("post-title").value);
@@ -287,7 +403,6 @@ async function handlePost(e) {
     const submitBtn = document.getElementById("post-submit");
     submitBtn.disabled = true;
     submitBtn.textContent = "Uploading...";
-
     try {
         const res = await fetch(`${API}/api/listings`, {
             method: "POST",
@@ -295,21 +410,14 @@ async function handlePost(e) {
             body: form,
         });
         const data = await res.json();
-        if (!res.ok) {
-            alert(data.detail || "Upload failed");
-            return;
-        }
+        if (!res.ok) { alert(data.detail || "Upload failed"); return; }
         closeModal("post-modal");
         document.getElementById("post-form").reset();
         document.getElementById("upload-preview").classList.add("hidden");
         document.querySelector("#upload-area p").classList.remove("hidden");
-        loadListings();  // Refresh feed
-    } catch (err) {
-        alert("Network error");
-    } finally {
-        submitBtn.disabled = false;
-        submitBtn.textContent = "🎨 Post It";
-    }
+        loadListings();
+    } catch (err) { alert("Network error"); }
+    finally { submitBtn.disabled = false; submitBtn.textContent = "🎨 Post It"; }
 }
 
 // ── Navigation ──────────────────────────────────────────────────────
@@ -319,23 +427,19 @@ function handleNav(view) {
     document.querySelector(`[data-view="${view}"]`).classList.add("active");
 
     if (view === "post") {
-        if (!token) {
-            alert("Please sign in to post artwork");
-            openModal("auth-modal");
-            return;
-        }
+        if (!token) { alert("Please sign in to post artwork"); openModal("auth-modal"); return; }
         openModal("post-modal");
     } else if (view === "feed") {
-        loadListings();
+        clearFilters();
     } else if (view === "profile") {
-        if (!token || !currentUser) {
-            alert("Please sign in first");
-            openModal("auth-modal");
-            return;
-        }
+        if (!token || !currentUser) { alert("Please sign in first"); openModal("auth-modal"); return; }
         showProfile(currentUser.username);
     } else if (view === "search") {
         document.getElementById("search-input").focus();
+    } else if (view === "messages") {
+        if (!token) { alert("Please sign in first"); openModal("auth-modal"); return; }
+        loadConversations();
+        openModal("message-modal");
     }
 }
 
@@ -351,7 +455,7 @@ async function showProfile(username) {
         const count = document.getElementById("listing-count");
         const status = document.getElementById("location-status");
 
-        status.textContent = `👤 ${profile.display_name || profile.username} — ${profile.bio || ""}`;
+        status.textContent = `👤 ${profile.display_name || profile.username} — ${profile.bio || "Artist"}`;
         empty.classList.add("hidden");
 
         const items = profile.listings || [];
@@ -362,7 +466,6 @@ async function showProfile(username) {
             empty.classList.remove("hidden");
             return;
         }
-
         grid.innerHTML = items.map(item => `
             <div class="card" onclick="showDetail(${item.id})">
                 <img src="${escapeHtml(item.image_url)}" alt="${escapeHtml(item.title)}" loading="lazy">
@@ -373,40 +476,22 @@ async function showProfile(username) {
                 </div>
             </div>
         `).join("");
-    } catch (err) {
-        console.error("Failed to load profile:", err);
-    }
+    } catch (err) { console.error("Failed to load profile:", err); }
 }
 
 // ── Search ──────────────────────────────────────────────────────────
 
 async function handleSearch(e) {
-    const query = e.target.value.toLowerCase().trim();
-    if (!query) {
-        renderFeed(listings);
-        return;
-    }
-    // Always search full feed, not just current view
-    if (listings.length === 0) await loadListings();
-    const filtered = listings.filter(item =>
-        item.title.toLowerCase().includes(query) ||
-        (item.medium && item.medium.toLowerCase().includes(query)) ||
-        (item.display_name && item.display_name.toLowerCase().includes(query))
-    );
-    renderFeed(filtered);
+    const q = e.target.value.trim();
+    if (!q) { renderFeed(listings); return; }
+    loadListings({ q });
 }
 
 // ── Modal Helpers ───────────────────────────────────────────────────
 
-function openModal(id) {
-    document.getElementById(id).classList.remove("hidden");
-}
+function openModal(id) { document.getElementById(id).classList.remove("hidden"); }
+function closeModal(id) { document.getElementById(id).classList.add("hidden"); }
 
-function closeModal(id) {
-    document.getElementById(id).classList.add("hidden");
-}
-
-// Close modals by clicking the dark backdrop
 document.addEventListener("click", (e) => {
     if (e.target.classList.contains("modal")) {
         e.target.classList.add("hidden");

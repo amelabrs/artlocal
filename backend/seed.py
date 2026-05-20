@@ -55,26 +55,30 @@ LISTINGS = [
 
 
 def seed():
+    from models import DATABASE_URL, query_one, execute
     init_db()
     conn = get_db()
+    P = "%s" if DATABASE_URL else "?"
 
     # Check if already seeded
-    existing = conn.execute("SELECT COUNT(*) as c FROM users").fetchone()["c"]
-    if existing > 0:
-        # Re-seed: drop old data
-        conn.execute("DELETE FROM listings")
-        conn.execute("DELETE FROM users")
+    existing = query_one(conn, "SELECT COUNT(*) as c FROM users")
+    if existing and existing["c"] > 0:
+        # Re-seed: drop old data (order matters for FK)
+        execute(conn, "DELETE FROM favorites")
+        execute(conn, "DELETE FROM follows")
+        execute(conn, "DELETE FROM messages")
+        execute(conn, "DELETE FROM listings")
+        execute(conn, "DELETE FROM users")
         conn.commit()
 
     # Create demo artists
     artist_ids = []
     for artist in ARTISTS:
         hashed = hash_password("demo1234")
-        cursor = conn.execute(
-            "INSERT INTO users (email, username, password_hash, display_name, bio, is_artist) VALUES (?, ?, ?, ?, ?, 1)",
-            (artist["email"], artist["username"], hashed, artist["display_name"], artist["bio"])
-        )
-        artist_ids.append(cursor.lastrowid)
+        aid = execute(conn,
+            f"INSERT INTO users (email, username, password_hash, display_name, bio, is_artist) VALUES ({P}, {P}, {P}, {P}, {P}, 1)",
+            (artist["email"], artist["username"], hashed, artist["display_name"], artist["bio"]))
+        artist_ids.append(aid)
 
     # Create demo listings
     for i, listing in enumerate(LISTINGS):
@@ -83,17 +87,16 @@ def seed():
         lng = BASE_LNG + listing["lng_offset"]
         image_url = DEMO_IMAGES[i % len(DEMO_IMAGES)]
 
-        conn.execute(
-            """INSERT INTO listings (artist_id, title, price, medium, dimensions, description, image_url, lat, lng)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+        execute(conn,
+            f"""INSERT INTO listings (artist_id, title, price, medium, dimensions, description, image_url, lat, lng)
+               VALUES ({P}, {P}, {P}, {P}, {P}, {P}, {P}, {P}, {P})""",
             (artist_id, listing["title"], listing["price"], listing["medium"],
-             listing["dimensions"], listing["description"], image_url, lat, lng)
-        )
+             listing["dimensions"], listing["description"], image_url, lat, lng))
 
     conn.commit()
     conn.close()
     print(f"✅ Seeded {len(ARTISTS)} artists and {len(LISTINGS)} listings!")
-    print(f"   Demo login: luna@demo.com / demo1234")
+    print(f"   Demo login: priya@demo.com / demo1234")
     print(f"   Open http://127.0.0.1:8888 to see the feed")
 
 

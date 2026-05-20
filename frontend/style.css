@@ -419,6 +419,109 @@ body {
     margin-top: 4px;
 }
 
+/* ── Filter Bar ────────────────────────────────────────────────────── */
+
+.filter-bar {
+    display: flex;
+    gap: 8px;
+    padding: 8px 16px;
+    align-items: center;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+}
+.filter-bar select,
+.filter-bar input {
+    padding: 6px 10px;
+    border-radius: 6px;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: var(--surface);
+    color: var(--text);
+    font-size: 0.8rem;
+    min-width: 80px;
+}
+.filter-bar button {
+    padding: 6px 12px;
+    border-radius: 6px;
+    border: none;
+    background: var(--accent);
+    color: white;
+    font-size: 0.8rem;
+    cursor: pointer;
+    white-space: nowrap;
+}
+#filter-clear {
+    background: #444;
+}
+
+/* ── Messages ──────────────────────────────────────────────────────── */
+
+.msg-list {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.msg-convo {
+    padding: 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.msg-convo:hover {
+    background: var(--surface-hover);
+}
+.msg-convo-name {
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+.msg-convo-preview {
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.msg-convo-badge {
+    display: inline-block;
+    background: var(--accent);
+    color: white;
+    border-radius: 50%;
+    width: 18px;
+    height: 18px;
+    font-size: 0.7rem;
+    text-align: center;
+    line-height: 18px;
+    float: right;
+}
+
+.msg-chat-area {
+    max-height: 300px;
+    overflow-y: auto;
+    padding: 8px 0;
+}
+.msg-bubble {
+    padding: 8px 12px;
+    border-radius: 12px;
+    margin-bottom: 6px;
+    max-width: 80%;
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+.msg-bubble.sent {
+    background: var(--accent);
+    color: white;
+    margin-left: auto;
+}
+.msg-bubble.received {
+    background: var(--surface-hover);
+    color: var(--text);
+}
+.msg-time {
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    margin-top: 2px;
+}
+
 /* ── Utilities ─────────────────────────────────────────────────────── */
 
 .hidden { display: none !important; }
