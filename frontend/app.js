@@ -426,17 +426,23 @@ function handleNav(view) {
     document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
     document.querySelector(`[data-view="${view}"]`).classList.add("active");
 
+    const filterBar = document.getElementById("filter-bar");
+
     if (view === "post") {
         if (!token) { alert("Please sign in to post artwork"); openModal("auth-modal"); return; }
         openModal("post-modal");
     } else if (view === "feed") {
+        filterBar.classList.remove("hidden");
         clearFilters();
     } else if (view === "profile") {
+        filterBar.classList.add("hidden");
         if (!token || !currentUser) { alert("Please sign in first"); openModal("auth-modal"); return; }
         showProfile(currentUser.username);
     } else if (view === "search") {
+        filterBar.classList.remove("hidden");
         document.getElementById("search-input").focus();
     } else if (view === "messages") {
+        filterBar.classList.add("hidden");
         if (!token) { alert("Please sign in first"); openModal("auth-modal"); return; }
         loadConversations();
         openModal("message-modal");

@@ -30,6 +30,24 @@
             <span id="location-status">📍 Getting your location...</span>
             <span id="listing-count"></span>
         </div>
+        <div id="filter-bar" class="filter-bar">
+            <select id="filter-medium">
+                <option value="">All Mediums</option>
+                <option value="Oil">Oil</option>
+                <option value="Acrylic">Acrylic</option>
+                <option value="Watercolor">Watercolor</option>
+                <option value="Crochet">Crochet</option>
+                <option value="Digital">Digital</option>
+                <option value="Sculpture">Sculpture</option>
+                <option value="Mixed Media">Mixed Media</option>
+                <option value="Pottery">Pottery</option>
+                <option value="Other">Other</option>
+            </select>
+            <input type="number" id="filter-min-price" placeholder="Min ₹" min="0">
+            <input type="number" id="filter-max-price" placeholder="Max ₹" min="0">
+            <button id="filter-apply" onclick="applyFilters()">Filter</button>
+            <button id="filter-clear" onclick="clearFilters()">✕</button>
+        </div>
         <div id="masonry-grid" class="masonry"></div>
         <div id="empty-state" class="empty-state hidden">
             <p>🖼️ No art found nearby.</p>
@@ -119,26 +137,6 @@
                 <button type="submit" id="post-submit">🎨 Post It</button>
             </form>
         </div>
-    </div>
-
-    <!-- ── Filter Bar ───────────────────────────────────────── -->
-    <div id="filter-bar" class="filter-bar">
-        <select id="filter-medium">
-            <option value="">All Mediums</option>
-            <option value="Oil">Oil</option>
-            <option value="Acrylic">Acrylic</option>
-            <option value="Watercolor">Watercolor</option>
-            <option value="Crochet">Crochet</option>
-            <option value="Digital">Digital</option>
-            <option value="Sculpture">Sculpture</option>
-            <option value="Mixed Media">Mixed Media</option>
-            <option value="Pottery">Pottery</option>
-            <option value="Other">Other</option>
-        </select>
-        <input type="number" id="filter-min-price" placeholder="Min ₹" min="0">
-        <input type="number" id="filter-max-price" placeholder="Max ₹" min="0">
-        <button id="filter-apply" onclick="applyFilters()">Filter</button>
-        <button id="filter-clear" onclick="clearFilters()">✕</button>
     </div>
 
     <!-- ── Message Modal ────────────────────────────────────── -->
