@@ -351,7 +351,7 @@ async function showProfile(username) {
         const count = document.getElementById("listing-count");
         const status = document.getElementById("location-status");
 
-        status.textContent = `👤 ${profile.display_name} — ${profile.bio || ""}`;
+        status.textContent = `👤 ${profile.display_name || profile.username} — ${profile.bio || ""}`;
         empty.classList.add("hidden");
 
         const items = profile.listings || [];
@@ -380,12 +380,14 @@ async function showProfile(username) {
 
 // ── Search ──────────────────────────────────────────────────────────
 
-function handleSearch(e) {
+async function handleSearch(e) {
     const query = e.target.value.toLowerCase().trim();
     if (!query) {
         renderFeed(listings);
         return;
     }
+    // Always search full feed, not just current view
+    if (listings.length === 0) await loadListings();
     const filtered = listings.filter(item =>
         item.title.toLowerCase().includes(query) ||
         (item.medium && item.medium.toLowerCase().includes(query)) ||
