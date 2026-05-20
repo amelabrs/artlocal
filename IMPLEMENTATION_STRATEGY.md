@@ -196,3 +196,54 @@ You absolutely can build this. The spec looks big but it's really just:
 - Messaging (doable)
 
 Start with Stage 1. Get art on a map. Everything else is incremental.
+
+---
+
+## Test Cases
+
+### Stage 1 — "The Gallery"
+
+| # | Test | Steps | Expected |
+|---|------|-------|----------|
+| 1.1 | Feed loads without login | Open app | Masonry grid shows seed listings with images, prices in ₹, artist names |
+| 1.2 | Geolocation distance | Allow location permission | Distance badges appear (e.g. "2.3 mi"); feed sorts by proximity |
+| 1.3 | Feed works without location | Deny location | Feed still loads, "Showing all art" status, no distance badges |
+| 1.4 | Sign up | Click Sign In → Sign Up → fill form → submit | Token stored, button shows "Sign Out" |
+| 1.5 | Login | Sign in with `priya@demo.com` / `demo1234` | Succeeds, auth state persists on reload |
+| 1.6 | Post artwork | Tap ➕ → fill title/price/photo → submit | New card appears in feed; shows in profile |
+| 1.7 | Post without image | Try to submit without selecting a photo | Validation prevents submit (required attribute) |
+| 1.8 | Detail view | Tap any card | Modal shows full image, title, price, medium, artist name |
+| 1.9 | Delete listing | Open your own listing → tap Delete → confirm | Listing removed from feed |
+| 1.10 | Mark sold | Open your own listing → tap Mark as Sold | Listing disappears from feed (is_sold filter) |
+| 1.11 | Profile view | Tap 👤 Profile | Shows your display name, all your listings (including sold) |
+| 1.12 | Search | Type "crochet" in search bar | Only listings matching "crochet" in title/medium/artist shown |
+| 1.13 | Modal close on backdrop | Click dark area outside any modal | Modal closes |
+
+### Stage 2 — "The Marketplace"
+
+| # | Test | Steps | Expected |
+|---|------|-------|----------|
+| 2.1 | Filter by medium | Select "Oil" from Filter dropdown → tap Filter | Only oil paintings shown |
+| 2.2 | Filter by price | Set min ₹500 max ₹5000 → Filter | Only listings in that range |
+| 2.3 | Clear filters | Tap ✕ clear button | All listings reload |
+| 2.4 | Combined filters | Set medium + price range → Filter | Both filters applied together |
+| 2.5 | Save to favorites | Open listing detail → tap ❤️ Save | Button changes to "💖 Saved" |
+| 2.6 | Remove favorite | Tap "💖 Saved" on already-saved item | Button reverts to "❤️ Save" |
+| 2.7 | Follow artist | Open another artist's listing → tap ➕ Follow | Button changes to "✓ Following" |
+| 2.8 | Unfollow artist | Tap "✓ Following" | Button reverts to "➕ Follow" |
+| 2.9 | Message from detail | Open listing → tap 💬 Message Artist | Chat opens with that artist in message modal |
+| 2.10 | Send message | Type text in chat → Send | Message appears in chat as "mine" bubble |
+| 2.11 | Receive message | Log in as another user and reply | Message appears in chat as "theirs" bubble |
+| 2.12 | Conversations list | Tap 💬 Messages in nav | Shows list of all conversations with last message preview |
+| 2.13 | Unread badge | Receive a message → check conversations list | Unread count badge shown next to sender's name |
+| 2.14 | Own listing hides social buttons | Open your own listing | Follow/Message/Save buttons not shown; Delete/Sold shown |
+| 2.15 | Auth required for social | Without logging in, tap Follow/Message/Save | "Please sign in" alert and auth modal opens |
+| 2.16 | PostgreSQL persistence | Redeploy app on Render | All data (users, listings, messages) survives |
+
+### Stage 2 — Database Upgrade
+
+| # | Test | Steps | Expected |
+|---|------|-------|----------|
+| DB.1 | Local dev uses SQLite | Run locally without DATABASE_URL | App works with SQLite file |
+| DB.2 | Render uses PostgreSQL | Set DATABASE_URL env var on Render | App connects to PG, tables auto-created |
+| DB.3 | Seed data on fresh DB | First deploy with empty PG | Seed data (14 listings, 4 artists) auto-inserted |
